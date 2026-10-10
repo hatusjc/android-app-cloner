@@ -9,6 +9,7 @@ import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.widget.Toast
 import com.the412banner.bfe.R
+import androidx.core.graphics.drawable.toBitmap
 
 /**
  * Pinned shortcuts belong to the Clone Hub package, not the separate clone APK.
@@ -25,10 +26,13 @@ object CloneShortcuts {
         val intent = Intent(ctx, CloneShortcutActivity::class.java)
             .setAction(Intent.ACTION_VIEW)
             .putExtra(EXTRA_PACKAGE, entry.clonePackage)
+        val cloneIcon = runCatching {
+            Icon.createWithBitmap(ctx.packageManager.getApplicationIcon(entry.clonePackage).toBitmap(96, 96))
+        }.getOrElse { Icon.createWithResource(ctx, R.mipmap.ic_launcher) }
         val shortcut = ShortcutInfo.Builder(ctx, "clonehub-${entry.clonePackage}")
             .setShortLabel(entry.cloneLabel.take(24))
             .setLongLabel(entry.cloneLabel.take(48))
-            .setIcon(Icon.createWithResource(ctx, R.mipmap.ic_launcher))
+            .setIcon(cloneIcon)
             .setIntent(intent)
             .build()
         return runCatching { manager.requestPinShortcut(shortcut, null) }.getOrDefault(false)
