@@ -154,7 +154,7 @@ object CloneCatalog {
                 .asSequence()
                 .filter { it.packageName != ctx.packageName && it.packageName !in knownClones }
                 .filterNot {
-                    CloneRules.isSystemApp(it.flags, ApplicationInfo.FLAG_SYSTEM, ApplicationInfo.FLAG_UPDATED_SYSTEM)
+                    CloneRules.isSystemApp(it.flags, ApplicationInfo.FLAG_SYSTEM, ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)
                 }
                 .mapNotNull { app ->
                     val component = pm.getLaunchIntentForPackage(app.packageName)?.component ?: return@mapNotNull null
