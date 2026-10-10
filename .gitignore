@@ -11,5 +11,12 @@ local.properties
 .idea/
 .kotlin/
 
-# NOTE: keystore/ and app/src/main/jniLibs/ are intentionally committed — this is a
-# sideload test app, so the test key and the prebuilt native extractors ship in the repo.
+# Keep signing keys out of the source tree. Original upstream key may remain in
+# forked Git history, but cannot be used for our production/test-release APKs.
+keystore/
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+# Bundled native binaries under app/src/main/jniLibs/ are upstream runtime components.
