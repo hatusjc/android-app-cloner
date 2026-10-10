@@ -1,66 +1,109 @@
-name: Build BFE (signed release APK)
-
-# Single-variant build for the sideload-only BFE app. Sets up JDK 17 + the Android SDK, assembles
-# the (test-signed) release APK, and uploads it as an artifact. No flavors, no NDK build, no imagefs.
-# Caching is tuned for fast warm-starts (Gradle deps + build cache + configuration cache + SDK).
+name: Android APK ARM64 - audit and release
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: build-${{ github.ref }}
+  group: android-apk-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-audit:
+    name: Build, unit tests, signatures and ARM64
     runs-on: ubuntu-22.04
-
+    timeout-minutes: 45
     steps:
-    - name: Clone repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
+      - name: Check out exact commit
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
-        # Belt-and-suspenders: setup-gradle below owns the primary Gradle cache.
-        cache: 'gradle'
+      - name: Verify known unsafe release key is not shipped
+        run: |
+          set -eu
+          test ! -f keystore/bfe-test.jks
+          if grep -R -E 'storePassword[[:space:]]+["\x27]bfetest|keyPassword[[:space:]]+["\x27]bfetest' app/build.gradle; then
+            echo "Public BFE test signer remains configured" >&2
+            exit 1
+          fi
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
 
-    # Cache the resolved SDK packages (platforms / build-tools) AGP auto-downloads, keyed on the
-    # toolchain inputs so it only re-provisions when compileSdk/build-tools/AGP actually change.
-    - name: Cache Android SDK packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ env.ANDROID_SDK_ROOT }}/platforms
-          ${{ env.ANDROID_SDK_ROOT }}/build-tools
-          ~/.android/build-cache
-        key: android-sdk-${{ runner.os }}-${{ hashFiles('**/*.gradle', 'gradle/libs.versions.toml') }}
-        restore-keys: |
-          android-sdk-${{ runner.os }}-
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Set up Gradle (dependency + build + configuration cache)
-      uses: gradle/actions/setup-gradle@v4
-      # setup-gradle keys its cache on the gradle files + wrapper automatically and restores from
-      # main's cache for branch/PR builds; it reports cache hit/miss in the job summary.
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-    - name: Assemble signed release APK
-      run: ./gradlew --no-daemon --build-cache assembleRelease
+      - name: Build debug APK and run unit tests
+        run: ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest
 
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: bfe-release-apk
-        path: app/build/outputs/apk/release/*.apk
-        if-no-files-found: error
+      - name: Upload debug APK for smoke testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-app-cloner-debug-arm64
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Restore private release signing key from encrypted secret
+        if: github.event_name != 'pull_request'
+        env:
+          APK_SIGNING_KEYSTORE_B64: ${{ secrets.APK_SIGNING_KEYSTORE_B64 }}
+        run: |
+          set -eu
+          test -n "$APK_SIGNING_KEYSTORE_B64" || { echo "Missing APK_SIGNING_KEYSTORE_B64 secret" >&2; exit 1; }
+          printf '%s' "$APK_SIGNING_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/android-app-cloner-release.p12"
+          chmod 600 "$RUNNER_TEMP/android-app-cloner-release.p12"
+
+      - name: Build signed release APK
+        if: github.event_name != 'pull_request'
+        env:
+          APK_SIGNING_KEYSTORE_PATH: ${{ runner.temp }}/android-app-cloner-release.p12
+          APK_SIGNING_PASSWORD: ${{ secrets.APK_SIGNING_PASSWORD }}
+          APK_SIGNING_ALIAS: ${{ secrets.APK_SIGNING_ALIAS }}
+        run: |
+          set -eu
+          test -n "$APK_SIGNING_PASSWORD"
+          test -n "$APK_SIGNING_ALIAS"
+          # Avoid writing signing credentials into Gradle configuration caches.
+          ./gradlew --no-daemon --no-configuration-cache :app:assembleRelease
+
+      - name: Audit release signatures, package, minimum SDK and native ABI
+        if: github.event_name != 'pull_request'
+        run: |
+          set -eu
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > apk-signature-report.txt
+          grep -F -q 'Verified using v2 scheme (APK Signature Scheme v2): true' apk-signature-report.txt
+          grep -F -q 'Verified using v3 scheme (APK Signature Scheme v3): true' apk-signature-report.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > apk-metadata-report.txt
+          grep -F -q "package: name='com.hatusjc.androidappcloner'" apk-metadata-report.txt
+          grep -F -q "sdkVersion:'26'" apk-metadata-report.txt
+          unzip -Z -1 "$APK" | grep -E '^lib/arm64-v8a/' > apk-native-libraries.txt
+          test -s apk-native-libraries.txt
+          sha256sum "$APK" > apk-sha256.txt
+          cat apk-sha256.txt
+
+      - name: Upload verified release and its audit evidence
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-app-cloner-release-arm64
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            apk-sha256.txt
+            apk-signature-report.txt
+            apk-metadata-report.txt
+            apk-native-libraries.txt
+          if-no-files-found: error
+          retention-days: 90
