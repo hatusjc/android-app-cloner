@@ -49,11 +49,31 @@ jobs:
       - name: Build debug APK and run unit tests
         run: ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest
 
-      - name: Upload debug APK for smoke testing
+      - name: Verify debug APK signature, Redmi A5 ABI and package identity
+        run: |
+          set -eu
+          APK='app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > debug-signature-report.txt
+          grep -F -q 'Verified using v2 scheme (APK Signature Scheme v2): true' debug-signature-report.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > debug-metadata-report.txt
+          grep -F -q "package: name='com.hatusjc.androidappcloner'" debug-metadata-report.txt
+          grep -F -q "sdkVersion:'26'" debug-metadata-report.txt
+          unzip -Z -1 "$APK" | grep -E '^lib/arm64-v8a/' > debug-native-libraries.txt
+          test -s debug-native-libraries.txt
+          sha256sum "$APK" > debug-apk-sha256.txt
+          cat debug-apk-sha256.txt
+
+      - name: Upload audited debug APK for smoke testing
         uses: actions/upload-artifact@v4
         with:
           name: android-app-cloner-debug-arm64
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            debug-apk-sha256.txt
+            debug-signature-report.txt
+            debug-metadata-report.txt
+            debug-native-libraries.txt
           if-no-files-found: error
           retention-days: 14
 
