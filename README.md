@@ -1,3 +1,17 @@
+# Android App Cloner — edição de testes ARM64 (fork do BFE)
+
+**APK de testes para Xiaomi Redmi A5 / Android 15 Go:**
+
+[Descarregar Android-App-Cloner-Redmi-A5-ARM64-v0.10-hatus1-test.apk](https://github.com/hatusjc/android-app-cloner/releases/download/v0.10-hatus.1-test/Android-App-Cloner-Redmi-A5-ARM64-v0.10-hatus1-test.apk)
+
+**Estado:** [GitHub Actions aprovado](https://github.com/hatusjc/android-app-cloner/actions/runs/38040109351) para compilação, testes unitários, assinatura de debug, manifesto Android e biblioteca ARM64. **Teste físico no aparelho ainda pendente.** O APK é de diagnóstico/testes; futuros builds podem exigir desinstalar o anterior por diferença da assinatura. Não existe premium: os recursos deste programa livre são gratuitos.
+
+Documentação em português: [Guia de clonagem](README-CLONAGEM-PT.md) · [Auditoria e pendências](AUDITORIA_ANDROID_15_GO.md) · [Releases](https://github.com/hatusjc/android-app-cloner/releases).
+
+Este é um fork comunitário sob **GPL-3.0**, sem afiliação ou endosso do mantenedor original. Mantemos a documentação técnica BFE a seguir.
+
+---
+
 # BFE
 
 **BFE** is a standalone, **sideload-only** Android file manager and explorer built around a set of
