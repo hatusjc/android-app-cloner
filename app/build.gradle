@@ -23,12 +23,14 @@ android {
     buildToolsVersion "35.0.0"
 
     defaultConfig {
-        applicationId "com.the412banner.bfe"
+        // Distinct from the upstream BFE package, so both can be installed side by side.
+        applicationId "com.hatusjc.androidappcloner"
         minSdkVersion 26
+        // Deliberately unchanged until Android 15 real-device tests confirm newer
+        // storage/foreground-service behavior: targetSdk 28 is legacy compatibility.
         targetSdkVersion 28
-        // Standalone app, versioned independently of the Bannerlator lineage it was lifted from.
-        versionCode 11
-        versionName "0.10"
+        versionCode 12
+        versionName "0.10-hatus.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
@@ -51,30 +53,38 @@ android {
         freeCompilerArgs += ['-Xskip-metadata-version-check']
     }
 
+    // Release credentials arrive only from protected GitHub Actions secrets.
+    // The publicly disclosed upstream test key must never sign a published build.
+    def releaseKeystore = System.getenv('APK_SIGNING_KEYSTORE_PATH')
+    def releasePassword = System.getenv('APK_SIGNING_PASSWORD')
+    def releaseAlias = System.getenv('APK_SIGNING_ALIAS')
+    def hasReleaseSigning = releaseKeystore && releasePassword && releaseAlias
+
     signingConfigs {
-        // TEST key (alias bfetest). A fixed, publicly-known key so every sideload build shares one
-        // signature — new builds install over-the-top instead of forcing an uninstall. Signed with
-        // v1 (JAR) + v2 + v3 for the broadest installer/OS compatibility.
         release {
-            storeFile file('../keystore/bfe-test.jks')
-            storePassword 'bfetest'
-            keyAlias 'bfetest'
-            keyPassword 'bfetest'
-            enableV1Signing = true
-            enableV2Signing = true
-            enableV3Signing = true
+            if (hasReleaseSigning) {
+                storeFile file(releaseKeystore)
+                storePassword releasePassword
+                keyAlias releaseAlias
+                keyPassword releasePassword
+                storeType 'pkcs12'
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
         }
     }
 
     buildTypes {
         debug {
             minifyEnabled false
-            // Debug APKs are test-signed too, so a sideloaded debug build installs over a release one.
-            signingConfig signingConfigs.release
+            // Android Gradle Plugin's standard per-runner debug key; never a release build.
         }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
