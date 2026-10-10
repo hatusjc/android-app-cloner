@@ -47,7 +47,7 @@ jobs:
             SDKMANAGER="$(command -v sdkmanager)"
           fi
           test -x "$SDKMANAGER"
-          printf 'y\\n%.0s' {1..40} | "$SDKMANAGER" --licenses >/dev/null
+          printf 'y\n%.0s' {1..40} | "$SDKMANAGER" --licenses >/dev/null
           "$SDKMANAGER" --install 'platforms;android-34' 'build-tools;35.0.0'
 
       - name: Configure Gradle
