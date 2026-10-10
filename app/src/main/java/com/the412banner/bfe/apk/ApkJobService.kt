@@ -44,6 +44,7 @@ data class ApkJobRequest(
                 e.allowBackup?.let { put("allowBackup", it) }
                 e.extractNativeLibs?.let { put("extractNativeLibs", it) }
                 e.iconImagePath?.let { put("icon", it) }
+                put("hideLauncher", e.hideLauncher)
             })
         }
         put("key", JSONObject().apply {
@@ -72,7 +73,7 @@ data class ApkJobRequest(
                         it.optStrOrNull("packageName"), it.optStrOrNull("label"), it.optIntOrNull("versionCode"),
                         it.optStrOrNull("versionName"), it.optIntOrNull("minSdk"), it.optIntOrNull("targetSdk"),
                         it.optBoolOrNull("debuggable"), it.optBoolOrNull("allowBackup"), it.optBoolOrNull("extractNativeLibs"),
-                        it.optStrOrNull("icon"),
+                        it.optStrOrNull("icon"), it.optBoolean("hideLauncher", false),
                     )
                 },
                 key = KeyRef(

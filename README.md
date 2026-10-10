@@ -1,3 +1,16 @@
+# Clone Hub v0.11 — Preview Free/Pro para testes
+
+**[Descarregar APK v0.11.0-alpha.1 ARM64 (GitHub)](https://github.com/hatusjc/android-app-cloner/releases/download/v0.11.0-alpha.1-preview/Clone-Hub-Preview-v0.11.0-alpha.1-ARM64.apk)**
+
+- Reestruturação focada na clonagem, com Free (2 clones), Pro para QA DEBUG, catálogo e seleção em lote.
+- APK Preview instala-se **ao lado** da v0.10 (`com.hatusjc.androidappcloner.preview`), sem substituir a versão anterior.
+- [Build e testes GitHub Actions: PASS](https://github.com/hatusjc/android-app-cloner/actions/runs/38042907467).
+- SHA-256 `7dd1e131b44b482e013d93a1ceb95d33ccb4fe98abf1a04241ef2b8d55996485`.
+- [Guia de testes físicos](docs/GUIA_TESTE_V0_11.md) · [Plano](docs/PLAN_CLONE_HUB_V0_11.md) · [Futuras funcionalidades](docs/IMPLEMENTACOES_FUTURAS.md) · [QA Xiaomi Redmi A5](https://github.com/hatusjc/android-app-cloner/issues/6).
+- **Pré-release, não produção**; execução real no Xiaomi ainda não validada. A desinstalação direta do host **não** remove APKs clonados; use o fluxo guiado.
+
+---
+
 # Android App Cloner — edição de testes ARM64 (fork do BFE)
 
 **APK de testes para Xiaomi Redmi A5 / Android 15 Go:**

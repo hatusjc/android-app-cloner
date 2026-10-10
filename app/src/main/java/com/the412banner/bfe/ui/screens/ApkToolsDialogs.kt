@@ -166,6 +166,8 @@ internal fun ApkEditorDialog(
     onDismiss: () -> Unit,
     onManageKeys: () -> Unit,
     onConfirm: (ApkEditRequest) -> Unit,
+    initialPackageName: String? = null,
+    requireInstall: Boolean = false,
 ) {
     val context = LocalContext.current
     val prefs = remember { androidx.preference.PreferenceManager.getDefaultSharedPreferences(context) }
@@ -174,7 +176,9 @@ internal fun ApkEditorDialog(
     var key by remember { mutableStateOf(SigningKeys.lastUsed(context)) }
     var schemes by remember { mutableStateOf(SigningKeys.lastSchemes(context)) }
 
-    var pkg by remember { mutableStateOf(if (kind == ApkJobKind.CLONE) meta.packageName + ".clone" else meta.packageName) }
+    var pkg by remember(meta.packageName, initialPackageName) {
+        mutableStateOf(initialPackageName ?: if (kind == ApkJobKind.CLONE) meta.packageName + ".clone" else meta.packageName)
+    }
     var label by remember { mutableStateOf(meta.label) }
     var versionCode by remember { mutableStateOf(meta.versionCode.toString()) }
     var versionName by remember { mutableStateOf(meta.versionName) }
@@ -300,7 +304,9 @@ internal fun ApkEditorDialog(
         },
         confirmButton = {
             Row {
-                TextButton(enabled = canConfirm, onClick = { onConfirm(request(install = false)) }) { Text(if (kind == ApkJobKind.CLONE) "Clone" else "Save") }
+                if (!requireInstall) {
+                    TextButton(enabled = canConfirm, onClick = { onConfirm(request(install = false)) }) { Text(if (kind == ApkJobKind.CLONE) "Clone" else "Save") }
+                }
                 TextButton(enabled = canConfirm, onClick = { onConfirm(request(install = true)) }) { Text(if (kind == ApkJobKind.CLONE) "Clone & Install" else "Save & Install") }
             }
         },

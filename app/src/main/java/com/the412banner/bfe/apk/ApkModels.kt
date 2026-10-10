@@ -42,6 +42,8 @@ data class ApkEdits(
     val extractNativeLibs: Boolean?,
     /** Absolute path of a PNG/JPEG/WebP to become the launcher icon, or null to keep. */
     val iconImagePath: String?,
+    /** Remove Android launcher categories from newly generated Clone Hub copies. */
+    val hideLauncher: Boolean = false,
 )
 
 /** Which signature schemes to emit. v4 is deliberately not offered. */

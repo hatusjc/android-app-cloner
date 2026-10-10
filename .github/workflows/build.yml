@@ -57,7 +57,7 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > debug-signature-report.txt
           grep -F -q 'Verified using v2 scheme (APK Signature Scheme v2): true' debug-signature-report.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > debug-metadata-report.txt
-          grep -F -q "package: name='com.hatusjc.androidappcloner'" debug-metadata-report.txt
+          grep -F -q "package: name='com.hatusjc.androidappcloner.preview'" debug-metadata-report.txt
           grep -F -q "sdkVersion:'26'" debug-metadata-report.txt
           unzip -Z -1 "$APK" | grep -E '^lib/arm64-v8a/' > debug-native-libraries.txt
           test -s debug-native-libraries.txt
