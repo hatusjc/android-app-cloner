@@ -43,6 +43,7 @@ import com.the412banner.bfe.BuildConfig
 import com.the412banner.bfe.apk.*
 import com.the412banner.bfe.clone.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -277,7 +278,12 @@ fun CloneHubScreen(modifier: Modifier = Modifier) {
 
     val installer = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val pkg = pendingInstallerPkg
-        if (pkg != null) {
+        if (pkg != null) scope.launch {
+            // Some Xiaomi builds publish PackageManager state shortly after the installer returns.
+            repeat(8) {
+                if (CloneCatalog.isInstalled(context, pkg)) return@repeat
+                delay(300)
+            }
             val installed = CloneCatalog.confirmInstallerReturn(context, pkg)
             toast(context, if (installed) "Clone instalado com sucesso." else "Instalação não confirmada ou cancelada.")
             pendingInstallerPkg = null
@@ -289,7 +295,11 @@ fun CloneHubScreen(modifier: Modifier = Modifier) {
 
     val remover = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val pkg = uninstallQueue.firstOrNull()
-        if (pkg != null) {
+        if (pkg != null) scope.launch {
+            repeat(8) {
+                if (!CloneCatalog.isInstalled(context, pkg)) return@repeat
+                delay(300)
+            }
             val removed = CloneCatalog.dropIfAbsent(context, pkg)
             if (!removed) toast(context, "Desinstalação não confirmada: " + pkg)
             uninstallQueue = uninstallQueue.drop(1)
@@ -362,7 +372,7 @@ fun CloneHubScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    if (!permissionsDone || !canInstall) {
+    if (!permissionsDone) {
         PermissionOnboarding(canInstall) {
             onboarding.edit().putBoolean("onboarded", true).apply()
             permissionsDone = true
@@ -430,6 +440,11 @@ fun CloneHubScreen(modifier: Modifier = Modifier) {
             }
         }
         Spacer(Modifier.height(12.dp))
+        if (!canInstall) {
+            TextButton(onClick = { installSettings(context) }, modifier = Modifier.fillMaxWidth()) {
+                Text("Permitir instalações de origem desconhecida")
+            }
+        }
         Button(onClick = { openPicker() }, modifier = Modifier.fillMaxWidth(), enabled = loading == null && pendingJobId == 0L) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(Modifier.width(8.dp))
