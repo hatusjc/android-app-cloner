@@ -184,6 +184,11 @@ object ApkRewriter {
                 renamePackage(module, manifest, oldPkg, newPkg, fixups)
             }
 
+            // Clone Hub instances belong to Android as separate packages, but they must not
+            // create independently launchable home-screen icons. Keep exported activities
+            // unchanged so the host can open the clone through an explicit ComponentName.
+            if (edits.hideLauncher) hideLauncherCategories(manifest, fixups)
+
             edits.label?.let { label ->
                 manifest.setApplicationLabel(label)
                 // A launcher shows the MAIN activity's own label when it has one — keep them in step.
@@ -345,6 +350,28 @@ object ApkRewriter {
         // 6. The package itself: manifest + resources.arsc package block.
         module.setPackageName(newPkg)
         fixups += "Package $oldPkg → $newPkg (manifest + resources.arsc)"
+    }
+
+    /**
+     * Retain the Android components and MAIN actions, replacing only launcher categories.
+     * A missing launcher is fatal, otherwise a "hidden" clone might appear on the home screen.
+     */
+    private fun hideLauncherCategories(manifest: AndroidManifestBlock, fixups: MutableList<String>) {
+        val app = manifest.applicationElement ?: throw IOException("No <application> in clone manifest")
+        var hidden = 0
+        for (element in app.recursiveElements().toList()) {
+            if (element.name != "category") continue
+            val attr = element.searchAttributeByResourceId(AndroidManifest.ID_name) ?: continue
+            if (attr.valueType != ValueType.STRING) continue
+            val old = attr.valueAsString ?: continue
+            val replacement = com.the412banner.bfe.clone.CloneRules.launcherCategoryForClone(old)
+            if (replacement != old) {
+                attr.setValueAsString(replacement)
+                hidden++
+            }
+        }
+        if (hidden == 0) throw IOException("Clone has no launch category to hide; refusing to expose a home-screen icon")
+        fixups += "Hidden $hidden launcher categor${if (hidden == 1) "y" else "ies"}; open through Clone Hub"
     }
 
     /** `.Foo` → `pkg.Foo`; bare `Foo` → `pkg.Foo`; already-qualified → null (unchanged). */
