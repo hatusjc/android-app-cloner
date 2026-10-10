@@ -1,3 +1,13 @@
+# Clone Hub v0.11.0-alpha.1 — versão disponível
+
+**[Download GitHub](https://github.com/hatusjc/android-app-cloner/releases/download/v0.11.0-alpha.1-preview/Clone-Hub-Preview-v0.11.0-alpha.1-ARM64.apk)** · [Execução CI aprovada](https://github.com/hatusjc/android-app-cloner/actions/runs/38042907467)
+
+SHA-256: `7dd1e131b44b482e013d93a1ceb95d33ccb4fe98abf1a04241ef2b8d55996485`.
+
+Este é um APK de testes, não uma versão de produção; pode ser instalado paralelamente à v0.10.
+
+---
+
 # Clone Hub v0.11.0-alpha.1 — guia de teste no Redmi A5
 
 **Tipo:** pré-visualização DEBUG Android ARM64, não produção. A v0.10 aprovada permanece intacta; a edição DEBUG usa o identificador `com.hatusjc.androidappcloner.preview` para poder ser instalada em paralelo. A assinatura debug dos GitHub Actions não é persistente entre builds: novas versões de teste podem exigir remover o preview anterior.
