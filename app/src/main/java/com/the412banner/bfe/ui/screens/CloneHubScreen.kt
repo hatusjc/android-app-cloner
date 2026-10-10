@@ -185,6 +185,8 @@ private fun GroupModal(
     pro: Boolean,
     onDismiss: () -> Unit,
     onToggle: (String) -> Unit,
+    onSelectAll: () -> Unit,
+    onDeleteSelected: () -> Unit,
     onOpen: (CloneEntry) -> Unit,
     onInfo: (CloneEntry) -> Unit,
     onUninstall: (CloneEntry) -> Unit,
@@ -195,6 +197,27 @@ private fun GroupModal(
         title = { Text(sourceLabel + " · " + entries.size + " clone(s)") },
         text = {
             Column(modifier = Modifier.heightIn(max = 540.dp).verticalScroll(rememberScrollState())) {
+                if (selection.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(selection.size.toString() + " selecionado(s)", modifier = Modifier.weight(1f))
+                        var groupActions by remember { mutableStateOf(false) }
+                        IconButton(onClick = { groupActions = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Selecionar todos")
+                        }
+                        DropdownMenu(expanded = groupActions, onDismissRequest = { groupActions = false }) {
+                            DropdownMenuItem(text = { Text("Selecionar todos") }, onClick = {
+                                onSelectAll()
+                                groupActions = false
+                            })
+                        }
+                        IconButton(onClick = onDeleteSelected) {
+                            Icon(Icons.Default.Delete, contentDescription = "Desinstalar selecionados")
+                        }
+                    }
+                }
                 entries.forEach { entry ->
                     Surface(
                         modifier = Modifier.fillMaxWidth().combinedClickable(
@@ -212,12 +235,14 @@ private fun GroupModal(
                                 maxLines = 1,
                             )
                             Text(entry.clonePackage, style = MaterialTheme.typography.bodySmall)
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { onOpen(entry) }) { Text("Abrir") }
-                                TextButton(onClick = { onInfo(entry) }) { Text("Info") }
-                                TextButton(onClick = { onUninstall(entry) }) { Text("Desinstalar") }
+                            if (selection.isEmpty()) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    TextButton(onClick = { onOpen(entry) }) { Text("Abrir") }
+                                    TextButton(onClick = { onInfo(entry) }) { Text("Info") }
+                                    TextButton(onClick = { onUninstall(entry) }) { Text("Desinstalar") }
+                                }
+                                if (pro) TextButton(onClick = { onShortcut(entry) }) { Text("Criar atalho no ecrã inicial") }
                             }
-                            if (pro) TextButton(onClick = { onShortcut(entry) }) { Text("Criar atalho no ecrã inicial") }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -604,11 +629,16 @@ fun CloneHubScreen(modifier: Modifier = Modifier) {
             onToggle = { pkg ->
                 selected = if (pkg in selected) selected - pkg else selected + pkg
             },
+            onSelectAll = { selected = installed.map { it.clonePackage }.toSet() },
+            onDeleteSelected = {
+                activeGroup = null
+                uninstallConfirmation = selected.toList()
+            },
             onOpen = { entry ->
                 if (!CloneCatalog.launch(context, entry)) toast(context, "O Android não conseguiu abrir o clone.")
             },
             onInfo = { entry -> CloneCatalog.showAndroidAppInfo(context, entry.clonePackage) },
-            onUninstall = { entry -> uninstallConfirmation = listOf(entry.clonePackage) },
+            onUninstall = { entry -> activeGroup = null; uninstallConfirmation = listOf(entry.clonePackage) },
             onShortcut = { entry ->
                 val requested = CloneShortcuts.pin(context, entry)
                 toast(context, if (requested) "Pedido de atalho enviado ao ecrã inicial." else "Este launcher não permite adicionar o atalho.")
