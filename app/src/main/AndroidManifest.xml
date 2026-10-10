@@ -3,23 +3,13 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- All-Files-Access is required: the bundled native extractors write directly to the
-         filesystem and cannot write through SAF. READ/WRITE_EXTERNAL_STORAGE cover pre-R. -->
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <!-- The extraction foreground service keeps a long job alive in the background. -->
+    <!-- Minimal runtime surface for Clone Hub APK copy, install and progress. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Held while extracting so screen-off CPU suspend doesn't pause a multi-hour repack. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- Lets the user exempt the app from battery optimisation for long background extractions. -->
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <!-- Lets "Open with" hand off an extracted installer/APK to the package installer. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <!-- The core purpose is enumerating user-installed apps to clone them.
-         Required to reconcile hidden-launcher clone packages on Android 11+. -->
+    <!-- Required to browse downloaded applications and reconcile hidden clone packages. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <application
@@ -53,51 +43,9 @@
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
-        <activity
-            android:name="com.the412banner.bfe.UnpackArchiveActivity"
-            android:theme="@style/AppTheme"
-            android:screenOrientation="sensor"
-            android:exported="true"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|density|navigation">
-            <!-- Let the OS "Open with"/Share sheet hand an archive or a GOG setup.exe to the extractor. -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="application/zip" />
-                <data android:mimeType="application/x-7z-compressed" />
-                <data android:mimeType="application/x-rar-compressed" />
-                <data android:mimeType="application/octet-stream" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="application/zip" />
-                <data android:mimeType="application/x-7z-compressed" />
-                <data android:mimeType="application/x-rar-compressed" />
-                <data android:mimeType="application/octet-stream" />
-            </intent-filter>
-        </activity>
-
-        <service
-            android:name="com.the412banner.bfe.unpack.UnpackService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
-
-        <!-- Archive creation (Compress…): the extraction service's sibling, same lifecycle. -->
-        <service
-            android:name="com.the412banner.bfe.pack.PackService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
-
         <!-- APK clone / edit / sign pipeline (ARSCLib rewrite + apksig), same lifecycle. -->
         <service
             android:name="com.the412banner.bfe.apk.ApkJobService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
-
-        <!-- Video conversion (bundled ffmpeg), same lifecycle. -->
-        <service
-            android:name="com.the412banner.bfe.video.ConvertService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
 
