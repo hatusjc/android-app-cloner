@@ -78,6 +78,10 @@ android {
     buildTypes {
         debug {
             minifyEnabled false
+            // Side-by-side preview avoids replacing the existing v0.10 test installation,
+            // whose GitHub Actions debug certificate may not match this workflow's key.
+            applicationIdSuffix ".preview"
+            versionNameSuffix "-debug"
             // Android Gradle Plugin's standard per-runner debug key; never a release build.
         }
         release {
