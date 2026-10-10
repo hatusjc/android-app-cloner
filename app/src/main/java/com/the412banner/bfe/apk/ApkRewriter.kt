@@ -359,7 +359,8 @@ object ApkRewriter {
     private fun hideLauncherCategories(manifest: AndroidManifestBlock, fixups: MutableList<String>) {
         val app = manifest.applicationElement ?: throw IOException("No <application> in clone manifest")
         var hidden = 0
-        for (element in app.recursiveElements().toList()) {
+        val elements = ArrayList<ResXmlElement>().apply { app.recursiveElements().forEach { add(it) } }
+        for (element in elements) {
             if (element.name != "category") continue
             val attr = element.searchAttributeByResourceId(AndroidManifest.ID_name) ?: continue
             if (attr.valueType != ValueType.STRING) continue
