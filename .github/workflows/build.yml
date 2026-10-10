@@ -39,7 +39,11 @@ jobs:
 
       - name: Use runner Android SDK (avoid obsolete SDK tools package)
         shell: bash
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
           set -e
           test -d "$ANDROID_HOME"
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
