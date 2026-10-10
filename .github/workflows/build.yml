@@ -54,18 +54,33 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Restore private release signing key from encrypted secret
+      - name: Check if private release signing is configured
         if: github.event_name != 'pull_request'
+        id: signing
+        env:
+          APK_SIGNING_KEYSTORE_B64: ${{ secrets.APK_SIGNING_KEYSTORE_B64 }}
+          APK_SIGNING_PASSWORD: ${{ secrets.APK_SIGNING_PASSWORD }}
+          APK_SIGNING_ALIAS: ${{ secrets.APK_SIGNING_ALIAS }}
+        run: |
+          if [ -n "$APK_SIGNING_KEYSTORE_B64" ] && [ -n "$APK_SIGNING_PASSWORD" ] && [ -n "$APK_SIGNING_ALIAS" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No private signing secrets: debug test APK only, no release APK."
+          fi
+
+      - name: Restore private release signing key from encrypted secret
+        if: steps.signing.outputs.available == 'true'
         env:
           APK_SIGNING_KEYSTORE_B64: ${{ secrets.APK_SIGNING_KEYSTORE_B64 }}
         run: |
           set -eu
-          test -n "$APK_SIGNING_KEYSTORE_B64" || { echo "Missing APK_SIGNING_KEYSTORE_B64 secret" >&2; exit 1; }
+          test -n "$APK_SIGNING_KEYSTORE_B64"
           printf '%s' "$APK_SIGNING_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/android-app-cloner-release.p12"
           chmod 600 "$RUNNER_TEMP/android-app-cloner-release.p12"
 
       - name: Build signed release APK
-        if: github.event_name != 'pull_request'
+        if: steps.signing.outputs.available == 'true'
         env:
           APK_SIGNING_KEYSTORE_PATH: ${{ runner.temp }}/android-app-cloner-release.p12
           APK_SIGNING_PASSWORD: ${{ secrets.APK_SIGNING_PASSWORD }}
@@ -78,7 +93,7 @@ jobs:
           ./gradlew --no-daemon --no-configuration-cache :app:assembleRelease
 
       - name: Audit release signatures, package, minimum SDK and native ABI
-        if: github.event_name != 'pull_request'
+        if: steps.signing.outputs.available == 'true'
         run: |
           set -eu
           APK="app/build/outputs/apk/release/app-release.apk"
@@ -95,7 +110,7 @@ jobs:
           cat apk-sha256.txt
 
       - name: Upload verified release and its audit evidence
-        if: github.event_name != 'pull_request'
+        if: steps.signing.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: android-app-cloner-release-arm64
