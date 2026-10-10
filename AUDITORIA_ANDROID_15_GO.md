@@ -16,14 +16,23 @@
 | AC-05 | P2 | Aplicativos autenticados por assinatura, atestação Play Integrity, DRM, Firebase e splits sob demanda podem rejeitar clonagem. | Limitações publicadas no guia português; nunca prometer clonagem universal. |
 | AC-06 | P2 | O aplicativo herdado solicita gestão total de arquivos (`MANAGE_EXTERNAL_STORAGE`), com impacto em privacidade. | Permissão sinalizada claramente ao testador; modernização/redução de permissões requer regressão do gestor de arquivos. |
 
-## Verificações técnicas exigidas para release
+## Resultados verificados em 10/10/2026
 
-- [ ] Workflow GitHub Actions conclui **build debug e testes unitários**.
-- [ ] Build de distribuição assinado com **certificado privado**; v2 e v3 verificados por `apksigner`.
-- [ ] `aapt` comprova ID `com.hatusjc.androidappcloner` e `minSdk 26`.
-- [ ] APK contém bibliotecas `arm64-v8a`.
-- [ ] Evidência SHA-256 e versão fica anexa ao workflow; release aponta para commit exato.
-- [ ] APK é guardado no computador autorizado e publicado na aba Releases do GitHub.
+- **PASS:** build debug + cinco testes JUnit de identificadores/etapas, assinatura APK v2, manifesto correto e bibliotecas ARM64; [execução de CI 38040109351](https://github.com/hatusjc/android-app-cloner/actions/runs/38040109351).
+- **PASS:** [pré-lançamento de testes v0.10-hatus.1-test](https://github.com/hatusjc/android-app-cloner/releases/tag/v0.10-hatus.1-test) aponta ao commit testado `b86a4ef343492462d2bb74ded0559e9dbb720759`.
+- **PASS:** APK de 35.138.500 bytes, SHA-256 `14e60e2d88f8e3608b0c398f94b7219814e8c99783bfc5ee0d6d1685d90eaf7c`, descarregado e conferido no PC autorizado em `/home/kirian/Downloads/Android-App-Cloner-Redmi-A5-ARM64-v0.10-hatus1-test.apk`. Relatórios na própria Release.
+- **PENDENTE:** certificado de assinatura **privado e persistente** nos segredos GitHub; esta pré-release usa certificado debug efémero do runner e **não deve ser tratada como release de produção**.
+- **PENDENTE:** validação física do Redmi A5 e dos fluxos reais de clonagem (ver abaixo).
+
+## Verificações técnicas exigidas
+
+- [x] Workflow GitHub Actions conclui **build debug e testes unitários reais**.
+- [x] Assinatura APK de teste verificada por `apksigner` (v2).
+- [ ] Build de **distribuição de produção** assinado com certificado privado persistente; v2 e v3 verificados por `apksigner`.
+- [x] `aapt` comprova ID `com.hatusjc.androidappcloner` e `minSdk 26`.
+- [x] APK contém bibliotecas `arm64-v8a`.
+- [x] Evidência SHA-256 anexa ao workflow; pré-release aponta para commit exato.
+- [x] APK guardado no PC autorizado e publicado na aba Releases do GitHub.
 
 **Teste manual que só pode ser marcado com o telefone ligado/operante:**
 - [ ] Redmi A5 aceita instalar o APK e inicia a aplicação sem crash.
